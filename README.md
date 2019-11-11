@@ -4,6 +4,8 @@
 
 Functions and classes for easily handling [OAuth 2](https://oauth.net/2/) operations, written for [Node.js 10+](https://nodejs.org/dist/latest-v10.x/docs/api/) in [TypeScript](https://www.typescriptlang.org/).
 
+The library is based on the concept of [oauth2-server](https://github.com/oauthjs/node-oauth2-server).
+
 ## Install
 
 Execute the following command from your project folder, where your `package.json` file is stored:
