@@ -121,6 +121,42 @@ export async function createClient(opts?: CreateClientOptions): Promise<Client> 
     return RESPONSE.body;
 }
 
+/**
+ * Tries to delete a client by ID.
+ * 
+ * @param {string} id The ID of the client.
+ * 
+ * @return {Promise<boolean>} The promise that indicates if operation was successful or not (client not found).
+ */
+export async function deleteClient(id: string): Promise<boolean> {
+    id = String(id).trim();
+
+    const admin_key = getAdminKey();
+
+    const RESPONSE = await got.delete(
+        getBaseUrl() + `oauth/clients/${
+            encodeURIComponent(id)
+        }`,
+        {
+            headers: {
+                'Authorization': `Bearer ${admin_key}`,
+            },
+            json: true,
+            throwHttpErrors: false,
+            timeout: 5000,
+        }
+    );
+
+    if (204 !== RESPONSE.statusCode) {
+        if (404 === RESPONSE.statusCode) {
+            return false;
+        }
+
+        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
+    }
+
+    return true;
+}
 
 /**
  * Tries to return a client by ID.

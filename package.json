@@ -1,6 +1,6 @@
 {
   "name": "@egodigital/oauth2-client",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Functions and classes for easily handling OAuth 2 operations.",
   "main": "lib/index.js",
   "scripts": {
