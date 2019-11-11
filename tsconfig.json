@@ -1,0 +1,14 @@
+{
+    "extends": "@egodigital/tsconfig",
+    "compilerOptions": {
+        "outDir": "lib",
+        "target": "es2018",
+        "lib": [
+            "es2018"
+        ],
+        "removeComments": false
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
