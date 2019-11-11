@@ -58,7 +58,6 @@ export async function getUserToken(username: string, password: string): Promise<
                     Buffer.from(`${client_id}:${client_secrect}`, 'utf8')
                         .toString('base64')
                 }`,
-                'Content-type': 'application/x-www-form-urlencoded',
             },
             form: true,
             json: true,
