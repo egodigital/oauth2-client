@@ -115,6 +115,40 @@ export async function getUserToken(username: string, password: string): Promise<
     };
 }
 
+/**
+ * Revokes an access token.
+ *
+ * @param {string} accessToken The token to revoke.
+ */
+export async function revokeToken(accessToken: string): Promise<void> {
+    accessToken = String(accessToken).trim();
+
+    const { client_id, client_secrect } = getClientCredentials();
+
+    const RESPONSE = await got.post(
+        getBaseUrl() + 'oauth/token/revoke',
+        {
+            body: {
+                'token': accessToken,
+            },
+            headers: {
+                'Authorization': `Basic ${
+                    Buffer.from(`${client_id}:${client_secrect}`, 'utf8')
+                        .toString('base64')
+                }`,
+            },
+            form: true,
+            json: true,
+            throwHttpErrors: false,
+            timeout: 5000,
+        }
+    );
+
+    if (200 !== RESPONSE.statusCode) {
+        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
+    }
+}
+
 
 function getBaseUrl() {
     let url = process.env.OAUTH2_URL
