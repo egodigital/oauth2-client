@@ -20,6 +20,16 @@ import * as moment from 'moment';
 
 
 /**
+ * Result of a 'getUserInfo()' call.
+ */
+export interface GetUserInfoResult {
+    /**
+     * The email.
+     */
+    email?: string;
+}
+
+/**
  * Result of a 'getUserToken()' call.
  */
 export interface GetUserTokenResult {
@@ -33,6 +43,35 @@ export interface GetUserTokenResult {
     accessTokenExpiresAt: moment.Moment;
 }
 
+
+/**
+ * Return user info by an access token.
+ *
+ * @param {string} accessToken The accessToken.
+ * 
+ * @return {Promise<GetUserInfoResult>} The promise with the result.
+ */
+export async function getUserInfo(accessToken: string): Promise<GetUserInfoResult> {
+    accessToken = String(accessToken).trim();
+
+    const RESPONSE = await got.get(
+        getBaseUrl() + 'userinfo',
+        {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+            json: true,
+            throwHttpErrors: false,
+            timeout: 5000,
+        }
+    );
+
+    if (200 !== RESPONSE.statusCode) {
+        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
+    }
+
+    return RESPONSE.body;
+}
 
 /**
  * Return an access token by username and password.
