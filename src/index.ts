@@ -68,6 +68,44 @@ export interface GetUserTokenResult {
 
 
 /**
+ * Tries to return a client by ID.
+ * 
+ * @param {string} id The ID of the client.
+ * 
+ * @return {Promise<Client|false>} The promise with the client or (false), if not found.
+ */
+export async function getClient(id: string): Promise<Client | false> {
+    id = String(id).trim();
+
+    const admin_key = getAdminKey();
+
+    const RESPONSE = await got.get(
+        getBaseUrl() + `oauth/clients/${
+            encodeURIComponent(id)
+        }`,
+        {
+            headers: {
+                'Authorization': `Bearer ${admin_key}`,
+            },
+            json: true,
+            throwHttpErrors: false,
+            timeout: 5000,
+        }
+    );
+
+    if (200 !== RESPONSE.statusCode) {
+        if (404 === RESPONSE.statusCode) {
+            return false;
+        }
+
+        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
+    }
+
+    return RESPONSE.body;
+}
+
+
+/**
  * Returns a list of all clients.
  * 
  * @return {Promise<Client[]>} The promise with the list of clients.
