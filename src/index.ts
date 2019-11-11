@@ -20,6 +20,29 @@ import * as moment from 'moment';
 
 
 /**
+ * A client object.
+ */
+export interface Client {
+    /**
+     * The ID of the client.
+     */
+    client_id: string;
+    /**
+     * The (display) name of the client, if available.
+     */
+    client_name?: string;
+    /**
+     * The client secrect.
+     */
+    client_secret?: string;
+}
+
+interface ClientCredentials {
+    client_id: string;
+    client_secret: string;
+}
+
+/**
  * Result of a 'getUserInfo()' call.
  */
 export interface GetUserInfoResult {
@@ -43,6 +66,33 @@ export interface GetUserTokenResult {
     accessTokenExpiresAt: moment.Moment;
 }
 
+
+/**
+ * Returns a list of all clients.
+ * 
+ * @return {Promise<Client[]>} The promise with the list of clients.
+ */
+export async function getClients(): Promise<Client[]> {
+    const admin_key = getAdminKey();
+
+    const RESPONSE = await got.get(
+        getBaseUrl() + 'oauth/clients',
+        {
+            headers: {
+                'Authorization': `Bearer ${admin_key}`,
+            },
+            json: true,
+            throwHttpErrors: false,
+            timeout: 5000,
+        }
+    );
+
+    if (200 !== RESPONSE.statusCode) {
+        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
+    }
+
+    return RESPONSE.body;
+}
 
 /**
  * Return user info by an access token.
@@ -82,7 +132,7 @@ export async function getUserInfo(accessToken: string): Promise<GetUserInfoResul
  * @return {Promise<GetUserTokenResult>} The promise with the result.
  */
 export async function getUserToken(username: string, password: string): Promise<GetUserTokenResult> {
-    const { client_id, client_secrect } = getClientCredentials();
+    const { client_id, client_secret } = getClientCredentials();
 
     const RESPONSE = await got.post(
         getBaseUrl() + 'oauth/token',
@@ -94,7 +144,7 @@ export async function getUserToken(username: string, password: string): Promise<
             },
             headers: {
                 'Authorization': `Basic ${
-                    Buffer.from(`${client_id}:${client_secrect}`, 'utf8')
+                    Buffer.from(`${client_id}:${client_secret}`, 'utf8')
                         .toString('base64')
                 }`,
             },
@@ -123,7 +173,7 @@ export async function getUserToken(username: string, password: string): Promise<
 export async function revokeToken(accessToken: string): Promise<void> {
     accessToken = String(accessToken).trim();
 
-    const { client_id, client_secrect } = getClientCredentials();
+    const { client_id, client_secret } = getClientCredentials();
 
     const RESPONSE = await got.post(
         getBaseUrl() + 'oauth/token/revoke',
@@ -133,7 +183,7 @@ export async function revokeToken(accessToken: string): Promise<void> {
             },
             headers: {
                 'Authorization': `Basic ${
-                    Buffer.from(`${client_id}:${client_secrect}`, 'utf8')
+                    Buffer.from(`${client_id}:${client_secret}`, 'utf8')
                         .toString('base64')
                 }`,
             },
@@ -150,7 +200,12 @@ export async function revokeToken(accessToken: string): Promise<void> {
 }
 
 
-function getBaseUrl() {
+function getAdminKey(): string {
+    return process.env.OAUTH2_KEY
+        .trim();
+}
+
+function getBaseUrl(): string {
     let url = process.env.OAUTH2_URL
         .trim();
 
@@ -165,11 +220,11 @@ function getBaseUrl() {
     return url;
 }
 
-function getClientCredentials() {
+function getClientCredentials(): ClientCredentials {
     return {
         client_id: process.env.OAUTH2_CLIENT_ID
             .trim(),
-        client_secrect: process.env.OAUTH2_CLIENT_SECRET
+        client_secret: process.env.OAUTH2_CLIENT_SECRET
             .trim(),
     };
 }
