@@ -43,6 +43,16 @@ interface ClientCredentials {
 }
 
 /**
+ * Options for a 'createClient()' call.
+ */
+export interface CreateClientOptions {
+    /**
+     * The custom name.
+     */
+    name?: string;
+}
+
+/**
  * Result of a 'getUserInfo()' call.
  */
 export interface GetUserInfoResult {
@@ -64,6 +74,51 @@ export interface GetUserTokenResult {
      * The timestamp the access token expires.
      */
     accessTokenExpiresAt: moment.Moment;
+}
+
+
+/**
+ * Creates a new client.
+ *
+ * @param {CreateClientOptions} [opts] The custom options.
+ * 
+ * @return {Promise<Client>} The promise with the new client.
+ */
+export async function createClient(opts?: CreateClientOptions): Promise<Client> {
+    if (!opts) {
+        opts = {} as any;
+    }
+
+    const admin_key = getAdminKey();
+
+    const BODY: any = {};
+
+    let name = opts.name;
+    if (name) {
+        BODY.data = {
+            name: String(opts.name)
+                .trim(),
+        };
+    }
+
+    const RESPONSE = await got.post(
+        getBaseUrl() + `oauth/clients`,
+        {
+            body: BODY,
+            headers: {
+                'Authorization': `Bearer ${admin_key}`,
+            },
+            json: true,
+            throwHttpErrors: false,
+            timeout: 5000,
+        }
+    );
+
+    if (200 !== RESPONSE.statusCode) {
+        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
+    }
+
+    return RESPONSE.body;
 }
 
 
