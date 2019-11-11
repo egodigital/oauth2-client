@@ -29,7 +29,9 @@ First define the following environment variables:
 
 ### Tokens
 
-#### Get an user token
+#### Users
+
+##### Get a new token
 
 ```typescript
 import { getUserToken } from '@egodigital/oauth2-client';
@@ -39,7 +41,7 @@ console.log(
 );
 ```
 
-#### Check user info
+##### Get info
 
 ```typescript
 import { getUserInfo } from '@egodigital/oauth2-client';
@@ -49,7 +51,7 @@ console.log(
 );
 ```
 
-#### Remove user token
+##### Revoke token
 
 ```typescript
 import { revokeToken } from '@egodigital/oauth2-client';
