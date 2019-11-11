@@ -16,283 +16,9 @@
  */
 
 import * as got from 'got';
-import * as moment from 'moment';
+import { getBaseUrl, getClientCredentials } from './config';
+import { toStringSafe } from './utils';
 
-
-/**
- * A client object.
- */
-export interface Client {
-    /**
-     * The ID of the client.
-     */
-    client_id: string;
-    /**
-     * The (display) name of the client, if available.
-     */
-    client_name?: string;
-    /**
-     * The client secrect.
-     */
-    client_secret?: string;
-}
-
-interface ClientCredentials {
-    client_id: string;
-    client_secret: string;
-}
-
-/**
- * Options for a 'createClient()' call.
- */
-export interface CreateClientOptions {
-    /**
-     * The custom name.
-     */
-    name?: string;
-}
-
-/**
- * Result of a 'getUserInfo()' call.
- */
-export interface GetUserInfoResult {
-    /**
-     * The email.
-     */
-    email?: string;
-}
-
-/**
- * Result of a 'getUserToken()' call.
- */
-export interface GetUserTokenResult {
-    /**
-     * The access token.
-     */
-    accessToken: string;
-    /**
-     * The timestamp the access token expires.
-     */
-    accessTokenExpiresAt: moment.Moment;
-}
-
-
-/**
- * Creates a new client.
- *
- * @param {CreateClientOptions} [opts] The custom options.
- * 
- * @return {Promise<Client>} The promise with the new client.
- */
-export async function createClient(opts?: CreateClientOptions): Promise<Client> {
-    if (!opts) {
-        opts = {} as any;
-    }
-
-    const admin_key = getAdminKey();
-
-    const BODY: any = {};
-
-    let name = opts.name;
-    if (name) {
-        BODY.data = {
-            name: String(opts.name)
-                .trim(),
-        };
-    }
-
-    const RESPONSE = await got.post(
-        getBaseUrl() + `oauth/clients`,
-        {
-            body: BODY,
-            headers: {
-                'Authorization': `Bearer ${admin_key}`,
-            },
-            json: true,
-            throwHttpErrors: false,
-            timeout: 5000,
-        }
-    );
-
-    if (200 !== RESPONSE.statusCode) {
-        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
-    }
-
-    return RESPONSE.body;
-}
-
-/**
- * Tries to delete a client by ID.
- * 
- * @param {string} id The ID of the client.
- * 
- * @return {Promise<boolean>} The promise that indicates if operation was successful or not (client not found).
- */
-export async function deleteClient(id: string): Promise<boolean> {
-    id = String(id).trim();
-
-    const admin_key = getAdminKey();
-
-    const RESPONSE = await got.delete(
-        getBaseUrl() + `oauth/clients/${
-            encodeURIComponent(id)
-        }`,
-        {
-            headers: {
-                'Authorization': `Bearer ${admin_key}`,
-            },
-            json: true,
-            throwHttpErrors: false,
-            timeout: 5000,
-        }
-    );
-
-    if (204 !== RESPONSE.statusCode) {
-        if (404 === RESPONSE.statusCode) {
-            return false;
-        }
-
-        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
-    }
-
-    return true;
-}
-
-/**
- * Tries to return a client by ID.
- * 
- * @param {string} id The ID of the client.
- * 
- * @return {Promise<Client|false>} The promise with the client or (false), if not found.
- */
-export async function getClient(id: string): Promise<Client | false> {
-    id = String(id).trim();
-
-    const admin_key = getAdminKey();
-
-    const RESPONSE = await got.get(
-        getBaseUrl() + `oauth/clients/${
-            encodeURIComponent(id)
-        }`,
-        {
-            headers: {
-                'Authorization': `Bearer ${admin_key}`,
-            },
-            json: true,
-            throwHttpErrors: false,
-            timeout: 5000,
-        }
-    );
-
-    if (200 !== RESPONSE.statusCode) {
-        if (404 === RESPONSE.statusCode) {
-            return false;
-        }
-
-        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
-    }
-
-    return RESPONSE.body;
-}
-
-
-/**
- * Returns a list of all clients.
- * 
- * @return {Promise<Client[]>} The promise with the list of clients.
- */
-export async function getClients(): Promise<Client[]> {
-    const admin_key = getAdminKey();
-
-    const RESPONSE = await got.get(
-        getBaseUrl() + 'oauth/clients',
-        {
-            headers: {
-                'Authorization': `Bearer ${admin_key}`,
-            },
-            json: true,
-            throwHttpErrors: false,
-            timeout: 5000,
-        }
-    );
-
-    if (200 !== RESPONSE.statusCode) {
-        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
-    }
-
-    return RESPONSE.body;
-}
-
-/**
- * Return user info by an access token.
- *
- * @param {string} accessToken The accessToken.
- * 
- * @return {Promise<GetUserInfoResult>} The promise with the result.
- */
-export async function getUserInfo(accessToken: string): Promise<GetUserInfoResult> {
-    accessToken = String(accessToken).trim();
-
-    const RESPONSE = await got.get(
-        getBaseUrl() + 'userinfo',
-        {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-            },
-            json: true,
-            throwHttpErrors: false,
-            timeout: 5000,
-        }
-    );
-
-    if (200 !== RESPONSE.statusCode) {
-        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
-    }
-
-    return RESPONSE.body;
-}
-
-/**
- * Return an access token by username and password.
- *
- * @param {string} username The username.
- * @param {string} password The password.
- * 
- * @return {Promise<GetUserTokenResult>} The promise with the result.
- */
-export async function getUserToken(username: string, password: string): Promise<GetUserTokenResult> {
-    const { client_id, client_secret } = getClientCredentials();
-
-    const RESPONSE = await got.post(
-        getBaseUrl() + 'oauth/token',
-        {
-            body: {
-                'grant_type': 'password',
-                'username': String(username),
-                'password': String(password),
-            },
-            headers: {
-                'Authorization': `Basic ${
-                    Buffer.from(`${client_id}:${client_secret}`, 'utf8')
-                        .toString('base64')
-                }`,
-            },
-            form: true,
-            json: true,
-            throwHttpErrors: false,
-            timeout: 5000,
-        }
-    );
-
-    if (200 !== RESPONSE.statusCode) {
-        throw new Error(`Unexpected response: [${RESPONSE.statusCode}] '${RESPONSE.statusMessage}'`);
-    }
-
-    return {
-        accessToken: RESPONSE.body.accessToken,
-        accessTokenExpiresAt: moment.utc(RESPONSE.body.accessTokenExpiresAt),
-    };
-}
 
 /**
  * Revokes an access token.
@@ -300,7 +26,8 @@ export async function getUserToken(username: string, password: string): Promise<
  * @param {string} accessToken The token to revoke.
  */
 export async function revokeToken(accessToken: string): Promise<void> {
-    accessToken = String(accessToken).trim();
+    accessToken = toStringSafe(accessToken)
+        .trim();
 
     const { client_id, client_secret } = getClientCredentials();
 
@@ -314,12 +41,12 @@ export async function revokeToken(accessToken: string): Promise<void> {
                 'Authorization': `Basic ${
                     Buffer.from(`${client_id}:${client_secret}`, 'utf8')
                         .toString('base64')
-                }`,
+                    }`,
             },
             form: true,
             json: true,
             throwHttpErrors: false,
-            timeout: 5000,
+            timeout: 10000,
         }
     );
 
@@ -329,31 +56,5 @@ export async function revokeToken(accessToken: string): Promise<void> {
 }
 
 
-function getAdminKey(): string {
-    return process.env.OAUTH2_KEY
-        .trim();
-}
-
-function getBaseUrl(): string {
-    let url = process.env.OAUTH2_URL
-        .trim();
-
-    if ('' === url) {
-        url = 'http://localhost:3000/';
-    }
-
-    if (!url.endsWith('/')) {
-        url += '/';
-    }
-
-    return url;
-}
-
-function getClientCredentials(): ClientCredentials {
-    return {
-        client_id: process.env.OAUTH2_CLIENT_ID
-            .trim(),
-        client_secret: process.env.OAUTH2_CLIENT_SECRET
-            .trim(),
-    };
-}
+export * from './clients';
+export * from './users';
